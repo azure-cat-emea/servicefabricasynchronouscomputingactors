@@ -21,7 +21,7 @@ In our scenario, the turn-based model for accessing actor methods could be an is
 	-  Receive and process multiple messages in a rigorous chronological order
 	-  Monitor the completion of individual message processing.
 	-  Stop the long running elaboration of a given message.
-	-  Collect and aggregate results in the internal state of the actor 
+	-  Collect and aggregate results in the internal state of the actor
 
 This sample also demonstrates how to:
 
@@ -40,18 +40,18 @@ For more information on the turn-based model for accessing actor methods, see th
 The following picture shows the architecture design of the application.
 <br/>
 <br/>
-![Architecture](https://raw.githubusercontent.com/paolosalvatori/servicefabricasynchronouscomputingactors/master/Images/Architecture.png)
+![Architecture](https://raw.githubusercontent.com/azure-cat-emea/servicefabricasynchronouscomputingactors/master/Images/Architecture.png)
 <br/>
 
 # Message Flow #
 1. A console application can be used to send a configurable amount of messages to a worker actor using one of the following options:
-	- Directly via an instance of the [ActorProxy](https://msdn.microsoft.com/en-us/library/microsoft.servicefabric.actors.actorproxy.aspx) class. This option can be used to debug and test the application on the local cluster or to simulate a context in which the worker actor is invoked by another service running on the same Service Fabric cluster. 
-	- Via a gateway service implemented by an ASP.NET Web API REST service running in a stateless reliable service. The service in question uses an OWIN listener to host the service. For more information, see [Get started: Service Fabric Web API services with OWIN self-hosting](https://azure.microsoft.com/en-us/documentation/articles/service-fabric-reliable-services-communication-webapi/ "Get started: Service Fabric Web API services with OWIN self-hosting"). 
+	- Directly via an instance of the [ActorProxy](https://msdn.microsoft.com/en-us/library/microsoft.servicefabric.actors.actorproxy.aspx) class. This option can be used to debug and test the application on the local cluster or to simulate a context in which the worker actor is invoked by another service running on the same Service Fabric cluster.
+	- Via a gateway service implemented by an ASP.NET Web API REST service running in a stateless reliable service. The service in question uses an OWIN listener to host the service. For more information, see [Get started: Service Fabric Web API services with OWIN self-hosting](https://azure.microsoft.com/en-us/documentation/articles/service-fabric-reliable-services-communication-webapi/ "Get started: Service Fabric Web API services with OWIN self-hosting").
  
-	See below for more details on how to configure and use the client application. 
+	See below for more details on how to configure and use the client application.
 2. Incoming messages are processed by a stateful Worker Actor. This actor allows to process incoming messages in a parallel or in strict chronological order, to monitor or stop the elaboration, collect and aggregate results in the internal state. See below for more details.
 
-In the demo, the client application can be used to send one or more messages to the worker actor and then it starts checking the completion state of message processing by invoking a method exposed by the actor every second. This mechanism is not necessary as the client could send the messages to process to the worker actor using a **fire-and-forget** approach without checking for the completion of their processing. For completeness, the sample implements also a mechanism to monitor the processing state of both parallel and sequential processing tasks as well as a mechanism to eventually stop them, but using this pattern is optional. The worker actor is used to accumulate the results produced by the elaboration of individual messages. In the demo, the elaboration of each message produces a random number between 1 and 100 to simulate a real computation. Both processing and sequential processing tasks invoke the worker actor to notify their completion and transmit the return value. The worker actor changes its persistent state to update the completion state of the processing tasks and updates the following statistics: 
+In the demo, the client application can be used to send one or more messages to the worker actor and then it starts checking the completion state of message processing by invoking a method exposed by the actor every second. This mechanism is not necessary as the client could send the messages to process to the worker actor using a **fire-and-forget** approach without checking for the completion of their processing. For completeness, the sample implements also a mechanism to monitor the processing state of both parallel and sequential processing tasks as well as a mechanism to eventually stop them, but using this pattern is optional. The worker actor is used to accumulate the results produced by the elaboration of individual messages. In the demo, the elaboration of each message produces a random number between 1 and 100 to simulate a real computation. Both processing and sequential processing tasks invoke the worker actor to notify their completion and transmit the return value. The worker actor changes its persistent state to update the completion state of the processing tasks and updates the following statistics:
 
 
 - number of received messages
@@ -63,17 +63,17 @@ In the demo, the client application can be used to send one or more messages to 
 - average value
 - latest N messages received and corresponding result, where N is configurable
 
-The sample can easily be changed to replace the code that emulates message elaboration with a real processing code. In addition, the processing logic can be changed to write or send the return value of each message processing to an external repository or service. For example, in a IoT scenario, the worker actor could eventually send a command to an external device, directly or indirectly via an outbound actor or by sending a C2D message to an IoT Hub. 
+The sample can easily be changed to replace the code that emulates message elaboration with a real processing code. In addition, the processing logic can be changed to write or send the return value of each message processing to an external repository or service. For example, in a IoT scenario, the worker actor could eventually send a command to an external device, directly or indirectly via an outbound actor or by sending a C2D message to an IoT Hub.
 
 # Service Fabric Application #
 The Service Fabric application is composed of three services:
 
-- **GatewayService**: this is a stateless reliable service running an **OWIN** listener and exposing an **ASP.NET Web API REST** service that is used as a gateway in front of the stateful actor service. 
+- **GatewayService**: this is a stateless reliable service running an **OWIN** listener and exposing an **ASP.NET Web API REST** service that is used as a gateway in front of the stateful actor service.
 - **WorkerActorService**: this is a stateful actor service hosting three actor services:
-	- **WorkerActorService**: this service is responsible to handle the interactions with external services, start message processing, monitor or stop the message elaboration, collect and aggregate results. 
-	-  **QueueActor**: this actor inherits from the **CircularQueueActor** abstract class which implements a circular queue. The reason why the queue has been implemented with a separate queue rather than with one of the collections provided by the .NET framework is twofold: 
+	- **WorkerActorService**: this service is responsible to handle the interactions with external services, start message processing, monitor or stop the message elaboration, collect and aggregate results.
+	-  **QueueActor**: this actor inherits from the **CircularQueueActor** abstract class which implements a circular queue. The reason why the queue has been implemented with a separate queue rather than with one of the collections provided by the .NET framework is twofold:
 		-  Minimize the footprint of the state portion to write or read whenever an enqueue or dequeue operation is executed.  
-		-  Extend the intrisic semantics of enqueue and dequeue operations with custom logic. 
+		-  Extend the intrisic semantics of enqueue and dequeue operations with custom logic.
 	-  **ProcessorActor**: this actor is responsible for processing messages in a chronological order.
 
 **Note**: one of the advantages of stateless services over stateful services is that by specifying **InstanceCount="-1"** in the **ApplicationManifest.xml**, you can create an instance of the service on each node of the Service Fabric cluster. When the cluster uses [Virtual Machine Scale Sets](https://azure.microsoft.com/en-gb/documentation/articles/virtual-machines-vmss-overview/) to to scale up and down the number of cluster nodes, this allows to automatically scale up and scale down the number of instances of a stateless service based on the autoscaling rules and traffic conditions.
@@ -81,7 +81,7 @@ The Service Fabric application is composed of three services:
 # The Worker Actor #
 The following table contains the actor interface implemented by the **WorkerActor** class.
 
-
+```csharp
 	namespace Microsoft.AzureCat.Samples.WorkerActorService.Interfaces
     {
 	    /// <summary>
@@ -98,7 +98,7 @@ The following table contains the actor interface implemented by the **WorkerActo
 	    Task<bool> StartSequentialProcessingAsync(Message message);
 	    
 	    /// <summary>
-	    /// Starts processing a message on a separate task. 
+	    /// Starts processing a message on a separate task.
 	    /// </summary>
 	    /// <param name="message">The message to process.</param>
 	    /// <returns>True if the operation completes successfully, false otherwise.</returns>
@@ -118,7 +118,7 @@ The following table contains the actor interface implemented by the **WorkerActo
 	    Task<bool> StopParallelProcessingAsync(string messageId);
 	    
 	    /// <summary>
-	    /// Used by the sequential processing task to signal the completion 
+	    /// Used by the sequential processing task to signal the completion
 	    /// of a message processing and return computed results.
 	    /// </summary>
 	    /// <param name="messageId">The message id.</param>
@@ -127,7 +127,7 @@ The following table contains the actor interface implemented by the **WorkerActo
 	    Task<bool> ReturnSequentialProcessingAsync(string messageId, long returnValue);
 	    
 	    /// <summary>
-	    /// Used by the parallel processing task to signal the completion 
+	    /// Used by the parallel processing task to signal the completion
 	    /// of a message processing and return computed results.
 	    /// </summary>
 	    /// <param name="messageId">The message id.</param>
@@ -151,7 +151,7 @@ The following table contains the actor interface implemented by the **WorkerActo
 	    /// <summary>
 	    /// Sets sequential processing state.
 	    /// </summary>
-	    /// <param name="runningState">True if the sequential processing task is still running, false otherwise.</param>
+	    /// <param name="runningState">True if the processing task is still running, false otherwise.</param>
 	    /// <returns>True if the operation completes successfully, false otherwise.</returns>
 	    Task<bool> SetSequentialProcessingStateAsync(bool runningState);
 	    
@@ -162,35 +162,35 @@ The following table contains the actor interface implemented by the **WorkerActo
 	    Task<Statistics> GetProcessingStatisticsAsync();
 	    }
 	}
-
+```
 # Parallel Processing #
 The following diagram shows the sequence diagram for the parallel message processing pattern.
 
-![Parallel Processing](https://raw.githubusercontent.com/paolosalvatori/servicefabricasynchronouscomputingactors/master/Images/Parallel.png)
+![Parallel Processing](https://raw.githubusercontent.com/azure-cat-emea/servicefabricasynchronouscomputingactors/master/Images/Parallel.png)
 
 # Sequential Processing #
 The following diagram shows the sequence diagram for the sequential message processing pattern.
 
-![SequentialProcessing](https://raw.githubusercontent.com/paolosalvatori/servicefabricasynchronouscomputingactors/master/Images/Sequential.png)
+![SequentialProcessing](https://raw.githubusercontent.com/azure-cat-emea/servicefabricasynchronouscomputingactors/master/Images/Sequential.png)
 
 
 # Client Application #
 The image belowshows the options offered by the client application to test the parallel and seuqntial message processing patterns directly via an **ActorProxy** object or via the **GatewayService**.
 <br/><br/>
-![ClientApplication](https://raw.githubusercontent.com/paolosalvatori/servicefabricasynchronouscomputingactors/master/Images/Client.png)
+![ClientApplication](https://raw.githubusercontent.com/azure-cat-emea/servicefabricasynchronouscomputingactors/master/Images/Client.png)
 
 
 The following table contains the settings defined in the configuration file of the client application:
-
+```xml
     <?xml version="1.0" encoding="utf-8"?>
     <configuration>
-		<startup> 
+		<startup>
 	  		<supportedRuntime version="v4.0" sku=".NETFramework,Version=v4.5.1"/>
 	  	</startup>
       	<appSettings>
-		    <!--The Gateway URL. Use: 
+		    <!--The Gateway URL. Use:
 		    - http://localhost:8082/worker when testing the application on the local Service Fabric cluster
-		    - http://<SF_CLUSTER_NAME>.<REGION>.cloudapp.azure.com:8082/worker 
+		    - http://<SF_CLUSTER_NAME>.<REGION>.cloudapp.azure.com:8082/worker
 		      when testing the application on Service Fabric cluster on Azure
 		    -->
 		    <add key="gatewayUrl" value="http://localhost:8082/worker"/>
@@ -202,16 +202,17 @@ The following table contains the settings defined in the configuration file of t
 		    <add key="delay" value="1"/>
 		</appSettings>
     </configuration>
-    
+```
 
 ## Service Fabric Configuration Files ##
 
 **ApplicationParameters\Local.xml** file in the **LongRunningActors** project:
 
+```xml
 	<?xml version="1.0" encoding="utf-8"?>
-    <Application xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
-	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-	 Name="fabric:/LongRunningActors" 
+    <Application xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	 Name="fabric:/LongRunningActors"
 	 xmlns="http://schemas.microsoft.com/2011/01/fabric">
 		<Parameters>
 			<Parameter Name="GatewayService_InstanceCount" Value="1" />
@@ -224,13 +225,15 @@ The following table contains the settings defined in the configuration file of t
 			<Parameter Name="ProcessorActorService_PartitionCount" Value="1" />
 		</Parameters>
     </Application>
+```
 
 **ApplicationParameters\Cloud.xml** file in the **LongRunningActors** project:
 
+```xml
     <?xml version="1.0" encoding="utf-8"?>
-    <Application xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
-	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-	 Name="fabric:/LongRunningActors" 
+    <Application xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	 Name="fabric:/LongRunningActors"
 	 xmlns="http://schemas.microsoft.com/2011/01/fabric">
 		<Parameters>
 			<Parameter Name="GatewayService_InstanceCount" Value="-1" />
@@ -243,14 +246,16 @@ The following table contains the settings defined in the configuration file of t
 			<Parameter Name="ProcessorActorService_PartitionCount" Value="1" />
 		</Parameters>
     </Application>
+```
 
 **ApplicationManifest.xml** file in the **LongRunningActors** project:
 
+```xml
     <?xml version="1.0" encoding="utf-8"?>
-    <ApplicationManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
-	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-	 ApplicationTypeName="LongRunningActorsType" 
-	 ApplicationTypeVersion="1.0.0" 
+    <ApplicationManifest xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	 ApplicationTypeName="LongRunningActorsType"
+	 ApplicationTypeVersion="1.0.0"
 	 xmlns="http://schemas.microsoft.com/2011/01/fabric">
 		<Parameters>
 			<Parameter Name="QueueActorService_PartitionCount" DefaultValue="5" />
@@ -286,7 +291,8 @@ The following table contains the settings defined in the configuration file of t
 					<ConfigOverride Name="Config">
 						<Settings>
 							<Section Name="GatewayServiceConfig">
-								<Parameter Name="ServiceRelativePath" Value="[GatewayService_ServiceRelativePath]" />
+								<Parameter Name="ServiceRelativePath"
+										   Value="[GatewayService_ServiceRelativePath]" />
 								<Parameter Name="MaxRetryCount" Value="[GatewayService_MaxRetryCount]" />
 								<Parameter Name="BackoffDelay" Value="[GatewayService_BackoffDelay]" />
 							</Section>
@@ -296,36 +302,38 @@ The following table contains the settings defined in the configuration file of t
 		</ServiceManifestImport>
 		<DefaultServices>
 			<Service Name="QueueActorService" GeneratedIdRef="0ee85dce-1c0a-4a09-82c2-d80d8a1ee2e8">
-				<StatefulService ServiceTypeName="QueueActorServiceType" 
-								 TargetReplicaSetSize="[QueueActorService_TargetReplicaSetSize]" 
+				<StatefulService ServiceTypeName="QueueActorServiceType"
+								 TargetReplicaSetSize="[QueueActorService_TargetReplicaSetSize]"
 								 MinReplicaSetSize="[QueueActorService_MinReplicaSetSize]">
-					<UniformInt64Partition PartitionCount="[QueueActorService_PartitionCount]" 
-										   LowKey="-9223372036854775808" 
+					<UniformInt64Partition PartitionCount="[QueueActorService_PartitionCount]"
+										   LowKey="-9223372036854775808"
 										   HighKey="9223372036854775807" />
 				</StatefulService>
 			</Service>
 			<Service Name="ProcessorActorService" GeneratedIdRef="ea86c350-5862-4840-a99c-552d11dbeaf5">
-				<StatefulService ServiceTypeName="ProcessorActorServiceType" 
-								 TargetReplicaSetSize="[ProcessorActorService_TargetReplicaSetSize]" 
+				<StatefulService ServiceTypeName="ProcessorActorServiceType"
+								 TargetReplicaSetSize="[ProcessorActorService_TargetReplicaSetSize]"
 								 MinReplicaSetSize="[ProcessorActorService_MinReplicaSetSize]">
-					<UniformInt64Partition PartitionCount="[ProcessorActorService_PartitionCount]" 
-										   LowKey="-9223372036854775808" 
+					<UniformInt64Partition PartitionCount="[ProcessorActorService_PartitionCount]"
+										   LowKey="-9223372036854775808"
 										   HighKey="9223372036854775807" />
 				</StatefulService>
 			</Service>
 			<Service Name="WorkerActorService" GeneratedIdRef="e0a44d7b-779e-4e80-a31c-4760b81e9891">
-				<StatefulService ServiceTypeName="WorkerActorServiceType" 
-								 TargetReplicaSetSize="[WorkerActorService_TargetReplicaSetSize]" 
+				<StatefulService ServiceTypeName="WorkerActorServiceType"
+								 TargetReplicaSetSize="[WorkerActorService_TargetReplicaSetSize]"
 								 MinReplicaSetSize="[WorkerActorService_MinReplicaSetSize]">
-					<UniformInt64Partition PartitionCount="[WorkerActorService_PartitionCount]" 
-										   LowKey="-9223372036854775808" 
+					<UniformInt64Partition PartitionCount="[WorkerActorService_PartitionCount]"
+										   LowKey="-9223372036854775808"
 										   HighKey="9223372036854775807" />
 				</StatefulService>
 			</Service>
 			<Service Name="GatewayService">
-				<StatelessService ServiceTypeName="GatewayServiceType" InstanceCount="[GatewayService_InstanceCount]">
+				<StatelessService ServiceTypeName="GatewayServiceType"
+                                  InstanceCount="[GatewayService_InstanceCount]">
 					<SingletonPartition />
 				</StatelessService>
 			</Service>
 		</DefaultServices>
     </ApplicationManifest>
+```
